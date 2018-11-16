@@ -33,7 +33,7 @@ class Main extends PluginBase{
 
 	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args): bool{
 		if($cmd->getName() == "ce"){
-			if(count($args) < 3){
+			if(count($args) < 2){
 				$sender->sendMessage("Usage: /ce <player> <enchantment> <level>");
 				return false;
 			}
@@ -55,27 +55,30 @@ class Main extends PluginBase{
 			}else{
 				$enchantment = PME::getEnchantmentByName($args[1]);
 			}
-			// if(!($enchantment instanceof PME)){
-			// 	$sender->sendMessage(C::RED . $args[1] . " enchantment cannot be found.");
-			// 	return false;
-			// }
-			if($args[1] > 100){
-				$sender->sendMessage(C::RED . "100 is the only enchant.");
-				return false;
-			}
-			if($args[1] < 100){
-				$sender->sendMessage(C::RED . "Vanilla Enchantments are not allow.");
+			if($args[1] < 100 || !$enchantment instanceof PME){
+				$sender->sendMessage(C::RED . "That enchantment cannot be found.");
 				return false;
 			}
 
 			$item = $inv->getItemInHand();
 			$this->addEnchantment($item, new EnchantmentInstance($enchantment, (int) ($args[2] ?? 1)), $enchantment);
 			$inv->setItemInHand($item);
+			var_dump($item->getLore());
 		}
 		return true;
 	}
 
-	public function addEnchantment(Item $item, EnchantmentInstance $enchantment, $e): void{
+	public function addEnchantment(Item $item, EnchantmentInstance $enchantment, PME $e): void{
+		if($item->hasEnchantment($enchantment->getId())){
+			//Thanks to Az928 on forum
+			$lvl = $item->getEnchantment($enchantment->getId())->getLevel();
+			$lore = $item->getLore();
+			$name = array_search($e->getName() . " " . $lvl, $lore);
+			unset($lore[$name]);
+			$item->setLore($lore);
+			$item->removeEnchantment($enchantment->getId());
+		}
+
 		$found = false;
 		$ench = $item->getNamedTagEntry(Item::TAG_ENCH);
 
@@ -89,10 +92,7 @@ class Main extends PluginBase{
 						new ShortTag("lvl", $enchantment->getLevel())
 					]);
 					$ench->set($k, $nbt);
-					// if(array_search($item->getLore(), $e->getName() . " " . $enchantment->getLevel()) !== null){
-					// 	$item->setCustomName("D");
-					// }
-					$item->setLore(array_merge([$e->getName() . " " . $enchantment->getLevel()], $item->getLore()));
+					$item->setLore(array_merge([$e->getName() . " " . $this->roman($enchantment->getLevel())], $item->getLore()));
 					$found = true;
 					break;
 				}
@@ -105,8 +105,38 @@ class Main extends PluginBase{
 				new ShortTag("lvl", $enchantment->getLevel())
 			]);
 			$ench->push($nbt);
-			$item->setLore(array_merge([$e->getName() . " " . $enchantment->getLevel()], $item->getLore()));
+			$item->setLore(array_merge([$e->getName() . " " . $this->roman($enchantment->getLevel())], $item->getLore()));
 		}
 		$item->setNamedTagEntry($ench);
+	}
+
+	public function roman(int $lvl): string{
+		$string = "";
+		$romans = [
+			"C" => 100,
+			"L" => 50,
+			"XL" => 40,
+			"X" => 10,
+			"IX" => 9,
+			"VIII" => 8,
+			"VII" => 7,
+			"VI" => 6,
+			"V" => 5,
+			"IV" => 4,
+			"III" => 3,
+			"II" => 2,
+			"I" => 1
+		];
+
+		while($lvl > 0){
+			foreach($romans as $roman => $int){
+				if($lvl >= $int){
+					$lvl -= $int;
+					$string .= $roman;
+					break;
+				}
+			}
+		}
+		return $string;
 	}
 }
