@@ -63,7 +63,6 @@ class Main extends PluginBase{
 			$item = $inv->getItemInHand();
 			$this->addEnchantment($item, new EnchantmentInstance($enchantment, (int) ($args[2] ?? 1)), $enchantment);
 			$inv->setItemInHand($item);
-			var_dump($item->getLore());
 		}
 		return true;
 	}
