@@ -1,0 +1,9 @@
+name: CustomEnchant
+version: 1.0.0
+api: 3.0.0
+main: xXNiceYT\CE\Main
+author: xXNiceYT
+
+commands:
+  ce:
+    description: "CustomEnchant Command"
